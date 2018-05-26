@@ -127,6 +127,8 @@ class WhileGradOp : public framework::OperatorBase {
       for (size_t i = 0; i < outside_og_names.size(); ++i) {
         auto outside_og_name = outside_og_names[i];
         auto inside_og_name = inside_og_names[i];
+        std::cout << "Linking outside " << outside_og_name << " --> inside "
+                  << inside_og_name << std::endl;
         VLOG(8) << "Linking outside " << outside_og_name << " --> inside "
                 << inside_og_name;
         auto &og_outside =

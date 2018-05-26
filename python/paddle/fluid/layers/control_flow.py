@@ -1467,7 +1467,10 @@ class DynamicRNN(object):
                shape=None,
                value=0.0,
                need_reorder=False,
-               dtype='float32'):
+               dtype='float32',
+               prefix=''):
+
+        print("^^^^^^^^^^^^^^^^^^^^^^%s" % (prefix))
         self._assert_in_rnn_block_('memory')
         if init is not None:
             if not isinstance(init, Variable):
@@ -1494,9 +1497,10 @@ class DynamicRNN(object):
                     outputs={'Out': [init_reordered]})
                 init_tensor = init_reordered
             mem_array = parent_block.create_var(
-                name=unique_name.generate('dynamic_rnn_mem_array'),
+                name=unique_name.generate(prefix + '123_dynamic_rnn_mem_array'),
                 type=core.VarDesc.VarType.LOD_TENSOR_ARRAY,
                 dtype=init.dtype)
+            print("mem array name--------------- %s " % (mem_array.name))
             parent_block.append_op(
                 type='write_to_array',
                 inputs={'X': init_tensor,
@@ -1517,7 +1521,7 @@ class DynamicRNN(object):
                 name=unique_name.generate('mem_init'), dtype=dtype)
             arr, dtype = self.input_array[0]
             in0 = parent_block.create_var(
-                name=unique_name.generate('in0'), dtype=dtype)
+                name=unique_name.generate(prefix + 'in0'), dtype=dtype)#, stop_gradient=True)
             parent_block.append_op(
                 type='read_from_array',
                 inputs={'X': [arr],
@@ -1532,7 +1536,7 @@ class DynamicRNN(object):
                     'value': float(value),
                     'dtype': init.dtype
                 })
-            return self.memory(init=init)
+            return self.memory(init=init, prefix=prefix)
 
     def update_memory(self, ex_mem, new_mem):
         self._assert_in_rnn_block_('update_memory')
@@ -1543,6 +1547,7 @@ class DynamicRNN(object):
             raise TypeError("The input arg `new_mem` of update_memory() must "
                             "be a Variable")
 
+        print("$$$$$$$$$$$$$$$$$$ %s" % (ex_mem.name))
         mem_array = self.mem_dict.get(ex_mem.name, None)
         if mem_array is None:
             raise ValueError("Please invoke memory before update_memory")
@@ -1564,9 +1569,11 @@ class DynamicRNN(object):
             attrs={'level': x.lod_level - 1})
         """
         for each in outputs:
+            name=unique_name.generate("_".join(
+                [self.helper.name, "output_array", each.name]))
+            print("--------++++++++++ output re-name bf:%s, af:%s" % (each.name, name))
             outside_array = parent_block.create_var(
-                name=unique_name.generate("_".join(
-                    [self.helper.name, "output_array", each.name])),
+                name=name,
                 type=core.VarDesc.VarType.LOD_TENSOR_ARRAY,
                 dtype=each.dtype)
             array_write(x=each, i=self.step_idx, array=outside_array)

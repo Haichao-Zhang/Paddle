@@ -124,32 +124,36 @@ class TestNestedRNN(unittest.TestCase):
             """
             print("before step -------------")
             print("lod --------- %s" % (emb.lod_level))
-            fluid.layers.Print(emb, print_phase='forward', message='emb')
+            # fluid.layers.Print(emb, print_phase='forward', message='emb')
             y = rnn.step_input(emb)
-
-            fluid.layers.Print(y, print_phase='forward', message='y')
+            mem = rnn.memory(shape=[self.hidden_dim], prefix='outer')
+            # fluid.layers.Print(y, print_phase='forward', message='y')
             print("y --lod level ------------- %s" % (y.lod_level))
 
-            rnn_inner = fluid.layers.DynamicRNN()
-            with rnn_inner.block():
-                fluid.layers.Print(y, print_phase='forward', message='y_inner rnn')
-                y_inner = rnn_inner.step_input(y)
-                fluid.layers.Print(y_inner, print_phase='forward', message='y_inner_step')
-                mem_inner = rnn_inner.memory(shape=[self.hidden_dim])
-                out_inner = fluid.layers.fc(input=[y_inner, mem_inner],
+            inner_flag = True
+            if inner_flag:
+                rnn_inner = fluid.layers.DynamicRNN()
+                with rnn_inner.block():
+                    # fluid.layers.Print(y, print_phase='forward', message='y_inner rnn')
+                    y_inner = rnn_inner.step_input(y)
+                    # fluid.layers.Print(y_inner, print_phase='forward', message='y_inner_step')
+                    mem_inner = rnn_inner.memory(shape=[self.hidden_dim], prefix='inner')
+                    out_inner = fluid.layers.fc(input=[y_inner, mem_inner],
                                   size=self.hidden_dim,
                                   act='tanh')
-                rnn_inner.update_memory(mem_inner, out_inner)
-                rnn_inner.output(out_inner)
+                    rnn_inner.update_memory(mem_inner, out_inner)
+                    rnn_inner.output(out_inner)
+                y_inner_out = rnn_inner()
+            else:
+                y_inner_out = y
 
-            y_inner = rnn_inner()
-            fluid.layers.Print(y_inner, print_phase='forward', message='y_inner_out')
-            y = fluid.layers.sequence_last_step(input=y_inner)
+            fluid.layers.Print(y_inner_out, print_phase='forward', message='y_inner_out')
+            y = fluid.layers.sequence_last_step(input=y_inner_out)
             # y = fluid.layers.sequence_last_step(input=y)
-            fluid.layers.Print(y, print_phase='forward', message='y_last')
+            # fluid.layers.Print(y, print_phase='forward', message='y_last')
             print("after step --------------")
             # fluid.layers.Print(emb)
-            mem = rnn.memory(shape=[self.hidden_dim])
+
             out = fluid.layers.fc(input=[y, mem],
                                   size=self.hidden_dim,
                                   act='tanh')
@@ -163,7 +167,7 @@ class TestNestedRNN(unittest.TestCase):
         out = rnn()
         print("after rnn() --------")
         # fluid.layers.Print(out, print_phase='forward')
-        fluid.layers.Print(out, print_phase='forward', message='out')
+        # fluid.layers.Print(out, print_phase='forward', message='out')
         rep = fluid.layers.sequence_last_step(input=out)
         # fluid.layers.Print(rep, print_phase='forward', message='out_last')
         prob = fluid.layers.fc(input=rep, size=self.label_dim, act='softmax')
@@ -212,9 +216,12 @@ class TestNestedRNN(unittest.TestCase):
             print("after step --------------")
             # fluid.layers.Print(emb)
             mem = rnn.memory(shape=[self.hidden_dim])
+
+            # out with the name of 'fc0_tmp.3'
             out = fluid.layers.fc(input=[y, mem],
                                   size=self.hidden_dim,
                                   act='tanh')
+            print("-----------------inner fc name %s " % (out.name))
             # fluid.layers.Print(out, print_phase='forward', message='out_inner')
             rnn.update_memory(mem, out)
             # fluid.layers.Print(out, print_phase='forward')
@@ -227,8 +234,9 @@ class TestNestedRNN(unittest.TestCase):
         # fluid.layers.Print(out, print_phase='forward')
         fluid.layers.Print(out, print_phase='forward', message='out')
         rep = fluid.layers.sequence_last_step(input=out)
-        # fluid.layers.Print(rep, print_phase='forward', message='out_last')
+        # Fluid.Layers.Print(rep, print_phase='forward', message='out_last')
         prob = fluid.layers.fc(input=rep, size=self.label_dim, act='softmax')
+        print("-----------------prob name %s " % (prob.name))
         # fluid.layers.Print(prob, print_phase='forward', message='prob')
         # fluid.layers.Print(prob)
         loss = fluid.layers.cross_entropy(prob, label)
@@ -243,6 +251,7 @@ class TestNestedRNN(unittest.TestCase):
         startup_program = fluid.Program()
 
         with fluid.program_guard(main_program, startup_program):
+        #    inputs, outputs = self.hrnn_working_version()
             inputs, outputs = self.hrnn()
         # print(main_program)
 

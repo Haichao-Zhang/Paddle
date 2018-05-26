@@ -45,7 +45,9 @@ class UniqueNameGenerator(object):
         """
         tmp = self.ids[key]
         self.ids[key] += 1
-        return self.prefix + "_".join([key, str(tmp)])
+        name = self.prefix + "_".join([key, str(tmp)])
+        print("-------------- %s " % (name))
+        return name
 
 
 generator = UniqueNameGenerator()
