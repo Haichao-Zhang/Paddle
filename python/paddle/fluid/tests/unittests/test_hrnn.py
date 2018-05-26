@@ -16,6 +16,7 @@ import paddle.fluid as fluid
 import paddle
 import unittest
 import numpy
+from paddle.fluid import debugger
 
 
 class TestNestedRNN(unittest.TestCase):
@@ -254,6 +255,7 @@ class TestNestedRNN(unittest.TestCase):
         #    inputs, outputs = self.hrnn_working_version()
             inputs, outputs = self.hrnn()
         # print(main_program)
+        print(debugger.print_program_codes(main_program))
 
         cpu = fluid.CPUPlace()
         exe = fluid.Executor(cpu)

@@ -1522,6 +1522,7 @@ class DynamicRNN(object):
             arr, dtype = self.input_array[0]
             in0 = parent_block.create_var(
                 name=unique_name.generate(prefix + 'in0'), dtype=dtype)#, stop_gradient=True)
+            Print(in0, message="in---------")
             parent_block.append_op(
                 type='read_from_array',
                 inputs={'X': [arr],
