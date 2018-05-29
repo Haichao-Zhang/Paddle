@@ -16,7 +16,7 @@ import paddle.fluid as fluid
 import paddle
 import unittest
 import numpy
-from paddle.fluid import debugger
+from paddle.fluid import debuger
 
 
 class TestNestedRNN(unittest.TestCase):
@@ -115,6 +115,7 @@ class TestNestedRNN(unittest.TestCase):
         # fluid.layers.Print(emb)
 
         rnn = fluid.layers.DynamicRNN()
+        rnn_inner = fluid.layers.DynamicRNN()
 
         print("before RNN-------------")
         with rnn.block():
@@ -127,18 +128,20 @@ class TestNestedRNN(unittest.TestCase):
             print("lod --------- %s" % (emb.lod_level))
             # fluid.layers.Print(emb, print_phase='forward', message='emb')
             y = rnn.step_input(emb)
-            mem = rnn.memory(shape=[self.hidden_dim], prefix='outer')
-            # fluid.layers.Print(y, print_phase='forward', message='y')
+            mem = rnn.memory(shape=[self.hidden_dim], prefix='outer_')
+            fluid.layers.Print(y, print_phase='forward', message='y')
+            fluid.layers.Print(mem, print_phase='forward', message='mem_outer_')
             print("y --lod level ------------- %s" % (y.lod_level))
 
             inner_flag = True
             if inner_flag:
-                rnn_inner = fluid.layers.DynamicRNN()
+                # rnn_inner = fluid.layers.DynamicRNN()
                 with rnn_inner.block():
                     # fluid.layers.Print(y, print_phase='forward', message='y_inner rnn')
                     y_inner = rnn_inner.step_input(y)
                     # fluid.layers.Print(y_inner, print_phase='forward', message='y_inner_step')
-                    mem_inner = rnn_inner.memory(shape=[self.hidden_dim], prefix='inner')
+                    mem_inner = rnn_inner.memory(init=mem, shape=[self.hidden_dim], prefix='inner_')
+                    fluid.layers.Print(mem_inner, print_phase='forward', message='mem_inner')
                     out_inner = fluid.layers.fc(input=[y_inner, mem_inner],
                                   size=self.hidden_dim,
                                   act='tanh')
@@ -255,7 +258,7 @@ class TestNestedRNN(unittest.TestCase):
         #    inputs, outputs = self.hrnn_working_version()
             inputs, outputs = self.hrnn()
         # print(main_program)
-        print(debugger.print_program_codes(main_program))
+        print(debuger.pprint_program_codes(startup_program))
 
         cpu = fluid.CPUPlace()
         exe = fluid.Executor(cpu)
