@@ -133,15 +133,16 @@ class TestNestedRNN(unittest.TestCase):
             fluid.layers.Print(mem, print_phase='forward', message='mem_outer_')
             print("y --lod level ------------- %s" % (y.lod_level))
 
-            inner_flag = True
+            inner_flag = False
             if inner_flag:
                 rnn_inner = fluid.layers.DynamicRNN()
                 with rnn_inner.block():
                     # fluid.layers.Print(y, print_phase='forward', message='y_inner rnn')
                     y_inner = rnn_inner.step_input(y)
                     # fluid.layers.Print(y_inner, print_phase='forward', message='y_inner_step')
-                    mem_inner = rnn_inner.memory(init=mem, shape=[self.hidden_dim], prefix='inner_')
-                    fluid.layers.Print(mem_inner, print_phase='forward', message='mem_inner')
+                    # mem_inner = rnn_inner.memory(init=mem, shape=[self.hidden_dim], prefix='inner_')
+                    mem_inner = rnn_inner.memory(shape=[self.hidden_dim], prefix='inner_')
+                    # fluid.layers.Print(mem_inner, print_phase='forward', message='mem_inner')
                     out_inner = fluid.layers.fc(input=[y_inner, mem_inner],
                                   size=self.hidden_dim,
                                   act='tanh')
