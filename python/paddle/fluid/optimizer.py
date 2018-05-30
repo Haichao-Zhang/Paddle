@@ -236,6 +236,7 @@ class Optimizer(object):
         This method combines interface `append_backward()` and
         `create_optimization_pass()` into one.
         """
+        print("para list ****************** %s" % (parameter_list))
         params_grads = append_backward(loss, parameter_list, no_grad_set,
                                        [error_clip_callback])
 

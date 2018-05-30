@@ -104,7 +104,10 @@ void Executor::CreateVariables(const ProgramDesc& pdesc, Scope* scope,
 
   if (ancestor_scope != scope) {
     for (auto& var : global_block.AllVars()) {
+      VLOG(3) << "var->Name() ------------------- 1"
+              << var->Name() << std::endl;
       if (var->Name() == framework::kEmptyVarName) {
+          VLOG(3) << "var->Name() " << var->Name() << std::endl;
         continue;
       }
 
@@ -122,6 +125,8 @@ void Executor::CreateVariables(const ProgramDesc& pdesc, Scope* scope,
     }
   } else {
     for (auto& var : global_block.AllVars()) {
+      VLOG(3) << "var->Name() ------------------- 2"
+              << var->Name() << std::endl;
       auto* ptr = scope->Var(var->Name());
       InitializeVariable(ptr, var->GetType());
       VLOG(3) << "Create variable " << var->Name() << ", which pointer is "

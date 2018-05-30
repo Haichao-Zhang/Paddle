@@ -115,7 +115,7 @@ class TestNestedRNN(unittest.TestCase):
         # fluid.layers.Print(emb)
 
         rnn = fluid.layers.DynamicRNN()
-        rnn_inner = fluid.layers.DynamicRNN()
+        # rnn_inner = fluid.layers.DynamicRNN()
 
         print("before RNN-------------")
         with rnn.block():
@@ -135,7 +135,7 @@ class TestNestedRNN(unittest.TestCase):
 
             inner_flag = True
             if inner_flag:
-                # rnn_inner = fluid.layers.DynamicRNN()
+                rnn_inner = fluid.layers.DynamicRNN()
                 with rnn_inner.block():
                     # fluid.layers.Print(y, print_phase='forward', message='y_inner rnn')
                     y_inner = rnn_inner.step_input(y)
@@ -247,7 +247,8 @@ class TestNestedRNN(unittest.TestCase):
         loss = fluid.layers.mean(loss)
         fluid.layers.Print(loss, print_phase='forward', message='loss')
         sgd = fluid.optimizer.Adam(1e-3)
-        sgd.minimize(loss=loss)
+        sgd.minimize(loss=loss) # 1) backward: create @GRAD, appned grad_op
+        # 2) add opt op
         return [data, label], [loss]
 
     def test_hrnn(self):
@@ -257,12 +258,12 @@ class TestNestedRNN(unittest.TestCase):
         with fluid.program_guard(main_program, startup_program):
         #    inputs, outputs = self.hrnn_working_version()
             inputs, outputs = self.hrnn()
-        # print(main_program)
-        print(debuger.pprint_program_codes(startup_program))
+        print(main_program)
+        # print(debuger.pprint_program_codes(startup_program))
 
         cpu = fluid.CPUPlace()
         exe = fluid.Executor(cpu)
-        exe.run(startup_program)
+        exe.run(startup_program) # para W
         ### DATA ##########
         feeder = fluid.DataFeeder(feed_list=inputs, place=cpu)
         dataset = paddle.batch(self.hrnn_data, batch_size=2)
@@ -271,6 +272,7 @@ class TestNestedRNN(unittest.TestCase):
             print cnt
             cnt = cnt + 1
             print data
+            # GRAD, tmp
             loss_np = exe.run(main_program,
                               feed=feeder.feed(data),
                               fetch_list=outputs)[0]

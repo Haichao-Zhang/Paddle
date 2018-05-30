@@ -115,7 +115,14 @@ class WhileGradOp : public framework::OperatorBase {
     auto outside_og_names = Inputs(framework::GradVarName(kOutputs));
     auto inside_og_names =
         Attr<std::vector<std::string>>("original_output_grad");
-
+    for (size_t i = 0; i < outside_og_names.size(); ++i) {
+        std::cout << "outside  " << i << " "
+                  << outside_og_names[i] << std::endl;
+    }
+    for (size_t i = 0; i < inside_og_names.size(); ++i) {
+        std::cout << "inside  " << i << " "
+                  << inside_og_names[i] << std::endl;
+    }
     PADDLE_ENFORCE_EQ(outside_og_names.size(), inside_og_names.size());
 
     for (auto cur_scope_iter = step_scopes->rbegin();
@@ -247,7 +254,9 @@ class WhileGradOpDescMaker : public framework::SingleGradOpDescMaker {
     for (auto &each_ig : igs) {
       if (inner_op_outputs.find(each_ig) == inner_op_outputs.end()) {
         VLOG(8) << "Ignore " << each_ig;
+        std::cout << "$$$$$$$$$$$$$$$$$ each_ig " << each_ig << std::endl;
         each_ig = framework::kEmptyVarName;
+        std::cout << "$$$$$$$$$$$$$$$$$ each_ig2 " << each_ig << std::endl;
       }
     }
     while_grad->SetOutput(framework::GradVarName(kX), igs);

@@ -328,6 +328,7 @@ def _append_backward_ops_(block,
 
         grad_op_descs.extend(grad_op_desc)
         grad_to_var.update(op_grad_to_var)
+        print("grad_to_var  ------------------ %s" % (grad_to_var))
 
     grad_op_descs = _addup_repetitive_outputs_(grad_op_descs)
 
@@ -361,6 +362,7 @@ def _append_backward_vars_(block, start_op_idx, grad_to_var, grad_info_map):
             val(tuple): a tuple of (str, Block), str is the corresponding grad name, Block is the block containing grad variable
     """
     for op_idx in range(start_op_idx, block.desc.op_size()):
+        print("op size %s / %s -----------------------" % (op_idx, block.desc.op_size()))
         op_desc = block.desc.op(op_idx)
         if op_desc.has_attr("sub_block"):
             sub_block = block.program.block(op_desc.block_attr("sub_block"))
@@ -369,6 +371,7 @@ def _append_backward_vars_(block, start_op_idx, grad_to_var, grad_info_map):
         # create new gradient variables
         for grad_var_name in op_desc.output_arg_names():
             grad_var_name = grad_var_name.encode("ascii")
+            print("^^^^^^^^^^^^^^^^^^^^ name bf %s " % (grad_var_name))
             if block.desc.has_var_recursive(
                     grad_var_name) or grad_var_name == core.empty_var_name():
                 continue
@@ -377,6 +380,7 @@ def _append_backward_vars_(block, start_op_idx, grad_to_var, grad_info_map):
             if not grad_to_var.has_key(grad_var_name):
                 continue
             grad_info_map[grad_to_var[grad_var_name]] = (grad_var_name, block)
+            print("^^^^^^^^^^^^^^^^^^^^ name af %s " % (grad_var_name))
         # infer_shape and infer_type
         op_desc.infer_var_type(block.desc)
         op_desc.infer_shape(block.desc)
@@ -384,6 +388,7 @@ def _append_backward_vars_(block, start_op_idx, grad_to_var, grad_info_map):
         if op_desc.type() == 'ncclInit':
             continue
         for arg in op_desc.output_arg_names():
+            print("!!!!!!!!!!!!!! output arg name %s" % (arg))
             if arg in new_vars:
                 _infer_var_data_type_(arg, block)
 
@@ -394,15 +399,18 @@ def _rename_grad_(block, start_op_idx, grad_to_var, target_grad_map):
         op_desc = block.desc.op(op_idx)
         for name in op_desc.input_arg_names():
             if name in var_map:
+                print("##############%s -- var_map" % var_map[name])
                 op_desc.rename_input(name, var_map[name])
 
         for name in op_desc.output_arg_names():
             if block.desc.find_var(name.encode("ascii")):
                 new_name = unique_name.generate(name)
                 op_desc.rename_output(name, new_name)
+                print("##############%s" % new_name)
                 var_map[name] = new_name
 
     for g, ng in var_map.iteritems():
+        print("##############ng: %s ------- g: %s" %(ng, g))
         if g in grad_to_var:
             grad_to_var[ng] = grad_to_var[g]
             grad_to_var.pop(g)
@@ -448,7 +456,6 @@ def append_backward(loss, parameter_list=None, no_grad_set=None,
     no_grad_set = copy.copy(no_grad_set)
     no_grad_dict = _get_stop_gradients_(program)
     no_grad_dict[0].update(map(_append_grad_suffix_, no_grad_set))
-
     grad_info_map = dict()
     root_block = program.block(0)
 
@@ -468,6 +475,7 @@ def append_backward(loss, parameter_list=None, no_grad_set=None,
     op_path = _find_op_path_(root_block, [loss], [], block_no_grad_set)
     no_grad_dict[0].update(map(_append_grad_suffix_, block_no_grad_set))
 
+    # get grad_to_var
     _append_backward_ops_(root_block, op_path, root_block, no_grad_dict,
                           grad_to_var, callbacks)
 
@@ -476,6 +484,7 @@ def append_backward(loss, parameter_list=None, no_grad_set=None,
     # different names.
     _rename_grad_(root_block, fwd_op_num, grad_to_var, {})
 
+    ## append grad var
     _append_backward_vars_(root_block, fwd_op_num, grad_to_var, grad_info_map)
 
     program.current_block_idx = current_block_idx
@@ -486,10 +495,12 @@ def append_backward(loss, parameter_list=None, no_grad_set=None,
     else:
         params = program.global_block().all_parameters()
         parameters = [param.name for param in params]
+        print("all paras -----------------------------%s" % (parameters))
 
     params_and_grads = []
     for param in parameters:
         if param not in grad_info_map:
+            print("not in grad info -----------------------------%s" % (param))
             continue
         grad_info = grad_info_map[param]
         grad_block = grad_info[1]
@@ -499,6 +510,7 @@ def append_backward(loss, parameter_list=None, no_grad_set=None,
         # Get the param var from the global block
         param_var = program.global_block().var(param)
         grad_var = grad_block.var(grad_info[0])
+        print("grad var ^^^^^^^^^^^^^^^^^^^^^^^ %s" % (grad_var))
         if loss.block.has_var(grad_info[0]):
             params_and_grads.append((param_var, grad_var))
         else:
