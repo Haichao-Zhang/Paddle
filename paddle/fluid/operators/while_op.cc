@@ -51,6 +51,7 @@ class WhileOp : public framework::OperatorBase {
 
     auto *program = block->Program();
 
+    // why FindVar return a scope?
     auto step_scopes =
         scope.FindVar(Output(kStepScopes))->GetMutable<StepScopeVar>();
 
@@ -115,6 +116,7 @@ class WhileGradOp : public framework::OperatorBase {
     auto outside_og_names = Inputs(framework::GradVarName(kOutputs));
     auto inside_og_names =
         Attr<std::vector<std::string>>("original_output_grad");
+    /*
     for (size_t i = 0; i < outside_og_names.size(); ++i) {
         std::cout << "outside  " << i << " "
                   << outside_og_names[i] << std::endl;
@@ -122,7 +124,8 @@ class WhileGradOp : public framework::OperatorBase {
     for (size_t i = 0; i < inside_og_names.size(); ++i) {
         std::cout << "inside  " << i << " "
                   << inside_og_names[i] << std::endl;
-    }
+    }*/
+
     PADDLE_ENFORCE_EQ(outside_og_names.size(), inside_og_names.size());
 
     for (auto cur_scope_iter = step_scopes->rbegin();
@@ -138,12 +141,13 @@ class WhileGradOp : public framework::OperatorBase {
                   << inside_og_name << std::endl;
         VLOG(8) << "Linking outside " << outside_og_name << " --> inside "
                 << inside_og_name;
-        auto &og_outside =
-            detail::Ref(scope.FindVar(outside_og_name),
-                        "Cannot find Outside Gradient %s", outside_og_name);
-        auto &og_inside =
+       auto &og_inside =
             detail::Ref(cur_scope.Var(inside_og_name),
                         "Cannot find inside gradient %s", inside_og_name);
+       std::cout << "inside grad found ---" << std::endl;
+       auto &og_outside =
+            detail::Ref(scope.FindVar(outside_og_name),
+                        "Cannot find Outside Gradient %s", outside_og_name);
         if (og_outside.Type().hash_code() ==
             typeid(framework::LoDTensor).hash_code()) {
           auto &outside_tensor = og_outside.Get<framework::LoDTensor>();

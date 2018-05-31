@@ -326,6 +326,7 @@ def _append_backward_ops_(block,
         grad_op_desc, op_grad_to_var = core.get_grad_op_desc(
             op.desc, no_grad_dict[block.idx], grad_sub_block_list)
 
+        # print("&&&&&&&&&&&&&&&@@@@@@@@@@@@@ %s " % (grad_op_desc))
         grad_op_descs.extend(grad_op_desc)
         grad_to_var.update(op_grad_to_var)
         print("grad_to_var  ------------------ %s" % (grad_to_var))
@@ -371,7 +372,7 @@ def _append_backward_vars_(block, start_op_idx, grad_to_var, grad_info_map):
         # create new gradient variables
         for grad_var_name in op_desc.output_arg_names():
             grad_var_name = grad_var_name.encode("ascii")
-            print("^^^^^^^^^^^^^^^^^^^^ name bf %s " % (grad_var_name))
+            #print("^^^^^^^^^^^^^^^^^^^^ name bf %s " % (grad_var_name))
             if block.desc.has_var_recursive(
                     grad_var_name) or grad_var_name == core.empty_var_name():
                 continue
@@ -380,9 +381,10 @@ def _append_backward_vars_(block, start_op_idx, grad_to_var, grad_info_map):
             if not grad_to_var.has_key(grad_var_name):
                 continue
             grad_info_map[grad_to_var[grad_var_name]] = (grad_var_name, block)
-            print("^^^^^^^^^^^^^^^^^^^^ name af %s " % (grad_var_name))
+            #print("^^^^^^^^^^^^^^^^^^^^ name af %s " % (grad_var_name))
         # infer_shape and infer_type
         op_desc.infer_var_type(block.desc)
+        print("block des: %s -----------*****" % (block.desc))
         op_desc.infer_shape(block.desc)
         # ncclInit dones't need to set data_type
         if op_desc.type() == 'ncclInit':
